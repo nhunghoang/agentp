@@ -1,0 +1,7 @@
+recursive-include agentp/external/MetaXcan *
+recursive-include agentp/external/fusion_twas *
+recursive-include agentp/external/ldsc *
+recursive-include agentp/external/plink2R *
+include agentp/models/*
+global-exclude __pycache__/
+global-exclude *.py[co]
