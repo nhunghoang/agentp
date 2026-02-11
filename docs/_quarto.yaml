@@ -1,0 +1,33 @@
+project:
+  type: website
+  render:
+    - "*.qmd"
+
+resources:
+  - install.sh
+  - run_example.sh
+  
+format:
+  html:
+    theme: cosmo
+    code-fold: false
+    code-copy: true
+
+website:
+  title: "AGENT-P"
+  navbar:
+    left:
+      - text: Home
+        file: index.qmd
+      - text: Installation
+        file: installation.qmd
+      - text: Functions
+        menu:
+          - file: function/GREX.qmd
+          - file: function/GWAS.qmd
+          - file: function/TWAS.qmd
+          - file: function/Genotypes.qmd
+
+repo-url: https://github.com/nhunghoang/dev_agentp
+repo-actions: [issue, source]
+

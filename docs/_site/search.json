@@ -1,0 +1,93 @@
+[
+  {
+    "objectID": "installation.html",
+    "href": "installation.html",
+    "title": "Getting started",
+    "section": "",
+    "text": "Compilers: GCC/10.2.0\nOpenMPI: ≥ 4.0.5\nPython: ≥ 3.8.6\nR: ≥ 4.0\n\n\n\n\nClone the repo\ngit clone --recurse-submodules https://github.com/nhunghoang/dev_agentp.git\ncd dev_agentp\n\n\n\nDownload models.tar.gz (see link in the README) and extract at the repo root:\ncd dev_agentp\ntar -xvzf models.tar.gz\n\n\n\nCreate and activate a virtual environment, then install Python deps listed in requirements.txt:\npython -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\n\n\n\n\n\nDownload an appropriate PLINK 2 alpha build and place the binary at:\ndev_agentp/software/plink2/plink2\n(See PLINK’s download page linked from the README.)\n\n\n\nBuild bgenix with waf:\ncd dev_agentp/software\nwget http://code.enkre.net/bgen/tarball/release/bgen.tgz\ntar -xvzf bgen.tgz \nmv bgen.tgz bgen\ncd bgen\n./waf configure\n./waf\n\n\n\nCompile Regenie:\ncd dev_agentp/software/regenie\nmake\n\n\n\n\nLastly, launch R from inside the main repo (dev_agentp) and run the following commands:\ninstall.packages(c('optparse','RColorBrewer'))\ninstall.packages('software/plink2R/plink2R/',repos=NULL)"
+  },
+  {
+    "objectID": "installation.html#requirements",
+    "href": "installation.html#requirements",
+    "title": "Getting started",
+    "section": "",
+    "text": "Compilers: GCC/10.2.0\nOpenMPI: ≥ 4.0.5\nPython: ≥ 3.8.6\nR: ≥ 4.0"
+  },
+  {
+    "objectID": "installation.html#get-the-sources",
+    "href": "installation.html#get-the-sources",
+    "title": "Getting started",
+    "section": "",
+    "text": "Clone the repo\ngit clone --recurse-submodules https://github.com/nhunghoang/dev_agentp.git\ncd dev_agentp"
+  },
+  {
+    "objectID": "installation.html#bundle-twas-module",
+    "href": "installation.html#bundle-twas-module",
+    "title": "Getting started",
+    "section": "",
+    "text": "Download models.tar.gz (see link in the README) and extract at the repo root:\ncd dev_agentp\ntar -xvzf models.tar.gz"
+  },
+  {
+    "objectID": "installation.html#dependencies",
+    "href": "installation.html#dependencies",
+    "title": "Getting started",
+    "section": "",
+    "text": "Create and activate a virtual environment, then install Python deps listed in requirements.txt:\npython -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt"
+  },
+  {
+    "objectID": "installation.html#external-tools",
+    "href": "installation.html#external-tools",
+    "title": "Getting started",
+    "section": "",
+    "text": "Download an appropriate PLINK 2 alpha build and place the binary at:\ndev_agentp/software/plink2/plink2\n(See PLINK’s download page linked from the README.)\n\n\n\nBuild bgenix with waf:\ncd dev_agentp/software\nwget http://code.enkre.net/bgen/tarball/release/bgen.tgz\ntar -xvzf bgen.tgz \nmv bgen.tgz bgen\ncd bgen\n./waf configure\n./waf\n\n\n\nCompile Regenie:\ncd dev_agentp/software/regenie\nmake"
+  },
+  {
+    "objectID": "installation.html#usage",
+    "href": "installation.html#usage",
+    "title": "Getting started",
+    "section": "",
+    "text": "Lastly, launch R from inside the main repo (dev_agentp) and run the following commands:\ninstall.packages(c('optparse','RColorBrewer'))\ninstall.packages('software/plink2R/plink2R/',repos=NULL)"
+  },
+  {
+    "objectID": "function/TWAS.html",
+    "href": "function/TWAS.html",
+    "title": "AGENT-P",
+    "section": "",
+    "text": "TWAS  Base class for transcriptome-wide association studies\n      Holds shared config (approach, region, model weights) and project paths.\n\n   obj = TWAS(project, twas_approach, grex_region)\n\n   Syntax:\n       # used via subclasses; no public run method here\n\n   Description:\n       Initializes common TWAS metadata:\n         • approach (e.g., 'FUS', 'PDX', 'UTM', 'JTI')\n         • grex_region (tissue / region label)\n         • weight_file resolved from Models.WEIGHT(approach, region)\n\n   Inputs:\n       project            Project object providing paths and I/O helpers\n       twas_approach      String: 'FUS' | 'PDX' | 'UTM' | 'JTI'\n       grex_region        String: tissue/region name\n\n   Outputs:\n       TWAS object with:\n         • .project, .approach, .grex_region, .weight_file"
+  },
+  {
+    "objectID": "function/GWAS.html",
+    "href": "function/GWAS.html",
+    "title": "AGENT-P",
+    "section": "",
+    "text": "GWAS  REGENIE wrapper for genome-wide association scans\n      Orchestrates step-1/step-2 runs per chromosome and consolidates outputs.\n\n   obj = GWAS(project)\n\n   Syntax:\n       obj.run(phens, overwrite=False, cleanup=True, num_threads=1)\n\n   Description:\n       The GWAS class wraps REGENIE to run GWAS for one or more phenotypes\n       using chromosome-specific BGEN inputs. It:\n         • Validates phenotype files from the provided Project and skips\n           phenotypes that already have results (unless overwrite=True).\n         • Builds a temporary multi-phenotype file and runs REGENIE\n           step 1 and step 2 for chromosomes 1..22 (parallelizable).\n         • Concatenates per-chromosome step-2 outputs into one result\n           file per phenotype and reformats to CSV with a computed PVAL.\n         • Optionally deletes temporary files on success.\n\n       Requirements (provided by the Project object):\n         • Genotypes directory with c{chrom}.bgen / c{chrom}.sample\n         • Covariates file path\n         • Phenotype file lookup via project.get_phenotype_file(name)\n         • Output directory via project.set_gwas_paths()\n\n   Inputs:\n       project              Project object supplying paths and I/O helpers.\n                            Used in the constructor.\n\n       phens                String or list[str]. Phenotype name(s) as known to\n                            the Project (each must resolve to a tab-separated\n                            file indexed by FID, IID).\n\n       overwrite            Logical scalar (default False). Recompute GWAS\n                            even if a result file already exists.\n\n       cleanup              Logical scalar (default True). Remove temporary\n                            REGENIE outputs and intermediate phenotype file.\n\n       num_threads          Positive integer (default 1). Number of worker\n                            processes used to parallelize per-chromosome runs.\n\n   Outputs:\n       Files (written under the Project’s GWAS output directory):\n         • &lt;phen&gt;.regenie            Final CSV per phenotype (step-2 results),\n                                      with PVAL computed from LOG10P and\n                                      standard REGENIE columns (ID→SNP, etc.).\n         • tmp/*                     Intermediate step-1/step-2 files per chr\n                                      (removed if cleanup=True).\n\n       Return value:\n         • None. Progress and warnings are printed to stdout."
+  },
+  {
+    "objectID": "documentation.html",
+    "href": "documentation.html",
+    "title": "agent_p",
+    "section": "",
+    "text": "Overview\nThis quick-start guide shows how to build and run the AGENT-P Docker image and execute the bundled example.\n\n\nBuild the Image\ncd dev_agentp\ndocker build -t agentp-img .\nA successful build ends with: =&gt; naming to docker.io/library/agentp-img:latest\n\n\nRun the Container\ndocker run -it agentp-img /bin/bash\n\n\nVerify Brace Expansion\nsh -c 'echo {2..4}'\nexpected output: 2 3 4\n\n\nRun the Example Code\ncd /usr/home/example\nbash -lc 'python run_example.py'\n\nA successfull running will create example_project, preprocesses genotypes per chromosome with QC, predicts GREX and runs sTWAS/iTWAS, performs GWAS for hippocampus_volume, and saves all results under the project directory."
+  },
+  {
+    "objectID": "function/GREX.html",
+    "href": "function/GREX.html",
+    "title": "AGENT-P",
+    "section": "",
+    "text": "GREX  Gene expression imputation class for TWAS pipelines\n      Converts genotype files to TWAS-compatible formats and applies \n      model weights to generate predicted gene expression (GREX).\n\n   obj = GREX(twas_approach, grex_region, twas_genotypes_dir, output_grex_file)\n\n   Syntax:\n       obj.slice_bgen(input_dir, cleanup)\n       obj.apply_weights(samples, samp_file)\n\n   Description:\n       The GREX class handles genotype processing and gene expression \n       prediction for different TWAS model frameworks. It supports both \n       summary-based (MetaXcan, UTMOST, JTI) and genotype-based (FUSION) \n       approaches. The class automates:\n           • BGEN slicing to model-specific SNPs\n           • Conversion of genotypes to dosage files\n           • Application of model weights (via PLINK2 or MetaXcan scripts)\n           • Generation of HDF5 files containing predicted expression\n\n   Inputs:\n       twas_approach        String specifying model family ('FUS', 'PDX', 'UTM', 'JTI')\n       grex_region          Target tissue or region name (e.g., 'Brain_Cortex')\n       twas_genotypes_dir   Directory containing chromosome-level genotype files\n       output_grex_file     Output HDF5 path for storing predicted expression\n\n   Outputs:\n       GREX object with:\n           • .slice_bgen()    Converts BGENs or PLINK2 sets to model-specific inputs\n           • .apply_weights() Generates predicted GREX matrices (genes × samples)\n           • Output file: &lt;output_grex_file&gt;.hdf5 containing:\n               - 'genes'      : gene identifiers\n               - 'pred_expr'  : predicted expression matrix\n\n   See also:\n       TWAS, SummaryTWAS, GenotypeTWAS, Project"
+  },
+  {
+    "objectID": "function/Genotypes.html",
+    "href": "function/Genotypes.html",
+    "title": "AGENT-P",
+    "section": "",
+    "text": "Genotypes  Base class for genotype I/O and QC helpers\n\n   obj = Genotypes()\n\n   Syntax:\n       # acts as a lightweight base; see BGEN subclass for functionality\n\n   Description:\n       Holds common attributes for genotype handlers (e.g., file_type).\n       Subclasses implement concrete loaders and QC pipelines.\n\n   Inputs:\n       (none)\n\n   Outputs:\n       Genotypes object with:\n         • .file_type  String label for subclass (\"bgen\", \"vcf\", …)\nBGEN  Quality control (QC) pipeline for chromosome-split BGEN cohorts\n      Converts cohort BGEN → filtered BGEN (per chr) with PLINK2 + bgenix.\n\n   obj = BGEN(input_dir, input_pattern, subjects_file, genotype_dir)\n\n   Syntax:\n       obj.apply_qc(geno_hardcall=0.1, snp_missing=0.05, maf=0.01, hwe=1e-5)\n\n   Description:\n       Prepares per-chromosome genotype files for downstream GWAS/TWAS by:\n         • (optionally) subsetting to a subject cohort and making temporary PGENs\n           (via private __get_cohort; currently commented out).\n         • Applying PLINK2 hard-call thresholding (step _0 → _1).\n         • Filtering SNPs by missingness and minor allele frequency (step _1 → _2).\n         • Removing duplicate SNP IDs and filtering by Hardy–Weinberg equilibrium,\n           then exporting final BGEN v1.2 (8-bit) per chromosome.\n         • Indexing each final BGEN with bgenix and cleaning intermediates.\n\n   Inputs:\n       input_dir        Directory containing source BGEN/SAMPLE files\n                        named by pattern (e.g., c*.bgen / c*.sample).\n\n       input_pattern    Filename pattern with a single '*' for chromosome,\n                        e.g., \"c*.bgen\" (used by __get_cohort if enabled).\n\n       subjects_file    Path to FID/IID keep list used with PLINK2 --keep\n                        (used by __get_cohort if enabled).\n\n       genotype_dir     Working/output directory where temporary PGENs and\n                        final BGENs are written (expects a tmp/ subdir).\n\n       geno_hardcall    Float ∈ [0,1]. PLINK2 --hard-call-threshold (default 0.10).\n\n       snp_missing      Float ∈ [0,1]. PLINK2 --geno filter (max allowed missingness,\n                        default 0.05).\n\n       maf              Float ∈ (0,0.5]. PLINK2 --maf filter (default 0.01).\n\n       hwe              Float p-value threshold for PLINK2 --hwe (default 1e-5).\n\n   Outputs:\n       Files (per chromosome c=1..22) in genotype_dir:\n         • tmp/c{c}_0.pgen/pvar/psam     (if cohort slicing enabled)\n         • tmp/c{c}_1.pgen/pvar/psam     (post hard-call)\n         • tmp/c{c}_2.pgen/pvar/psam     (post missingness + MAF)\n         • c{c}.bgen, c{c}.bgen.bgi      (final filtered BGEN + index)\n       Return value:\n         • None. Progress is printed; intermediate tmp files are removed where noted."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "AGENT-P",
+    "section": "",
+    "text": "AGENT-P\nAGENT-P is a Python toolkit for GWAS/TWAS workflows.\nIt wraps common tools (REGENIE, PLINK2, bgenix) and provides simple classes for project setup (Project), GWAS (GWAS), and TWAS (SummaryTWAS, GenotypeTWAS).\nSee the repo README for details and references.\n\nDownload\nGitHub\n\n\nInteractive examples\nThe examples illustrate the basic pipeline and can be run locally.\n\nExample script — mirrors the README run\nexample/run_example.py\n\n\n\nInstallation\nYou can run AGENT-P in two ways:\n\nManual setup: Follow the steps in installation.qmd to install dependencies and run the program manually.\nDockerfile setup: Follow the steps in documentation.qmd to run the Dockerfile directly.\nAutomated setup: Run the quick_run.sh to automatically download the required .sh files, install dependencies, and execute the example pipeline.\n\n\n\nContact\nMika Rubinov: mika.rubinov at vanderbilt.edu\nNhung Hoang: nhung.t.hoang at outlook.com"
+  }
+]

@@ -1,0 +1,42 @@
+PLINK v2.0.0-a.6.3 64-bit (3 Dec 2024)
+Options in effect:
+  --bgen /Users/zoeytang/Desktop/dev_agentp/example/example_project/input_data/genotypes/c14.bgen ref-first
+  --extract /Users/zoeytang/Desktop/dev_agentp/dev_agentp/agentp/models/FUSION/snps/c14.csv
+  --make-bed
+  --out /Users/zoeytang/Desktop/dev_agentp/example/example_project/input_data/twas_genotypes/bed_FUS/c14
+  --sample /Users/zoeytang/Desktop/dev_agentp/example/example_project/input_data/genotypes/c14.sample
+
+Hostname: Zoeys-MacBook-Air-7.local
+Working directory: /Users/zoeytang/Desktop/dev_agentp/example
+Start time: Fri Dec 12 13:21:36 2025
+
+Random number seed: 1765567296
+8192 MiB RAM detected; reserving 4096 MiB for main workspace.
+Using up to 8 compute threads.
+--bgen: 9513 variants declared in header, format v1.2.
+2000 samples imported from .sample file to
+/Users/zoeytang/Desktop/dev_agentp/example/example_project/input_data/twas_genotypes/bed_FUS/c14-temporary.psam
+.
+--bgen:
+/Users/zoeytang/Desktop/dev_agentp/example/example_project/input_data/twas_genotypes/bed_FUS/c14-temporary.pgen
++
+/Users/zoeytang/Desktop/dev_agentp/example/example_project/input_data/twas_genotypes/bed_FUS/c14-temporary.pvar
+written.
+2000 samples (1012 females, 988 males; 2000 founders) loaded from
+/Users/zoeytang/Desktop/dev_agentp/example/example_project/input_data/twas_genotypes/bed_FUS/c14-temporary.psam.
+9513 variants loaded from
+/Users/zoeytang/Desktop/dev_agentp/example/example_project/input_data/twas_genotypes/bed_FUS/c14-temporary.pvar.
+Note: No phenotype data present.
+--extract: 4596 variants remaining.
+4596 variants remaining after main filters.
+Writing
+/Users/zoeytang/Desktop/dev_agentp/example/example_project/input_data/twas_genotypes/bed_FUS/c14.fam
+... done.
+Writing
+/Users/zoeytang/Desktop/dev_agentp/example/example_project/input_data/twas_genotypes/bed_FUS/c14.bim
+... done.
+Writing
+/Users/zoeytang/Desktop/dev_agentp/example/example_project/input_data/twas_genotypes/bed_FUS/c14.bed
+... done.
+
+End time: Fri Dec 12 13:21:36 2025

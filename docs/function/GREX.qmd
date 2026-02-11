@@ -1,0 +1,38 @@
+```
+GREX  Gene expression imputation class for TWAS pipelines
+      Converts genotype files to TWAS-compatible formats and applies 
+      model weights to generate predicted gene expression (GREX).
+
+   obj = GREX(twas_approach, grex_region, twas_genotypes_dir, output_grex_file)
+
+   Syntax:
+       obj.slice_bgen(input_dir, cleanup)
+       obj.apply_weights(samples, samp_file)
+
+   Description:
+       The GREX class handles genotype processing and gene expression 
+       prediction for different TWAS model frameworks. It supports both 
+       summary-based (MetaXcan, UTMOST, JTI) and genotype-based (FUSION) 
+       approaches. The class automates:
+           • BGEN slicing to model-specific SNPs
+           • Conversion of genotypes to dosage files
+           • Application of model weights (via PLINK2 or MetaXcan scripts)
+           • Generation of HDF5 files containing predicted expression
+
+   Inputs:
+       twas_approach        String specifying model family ('FUS', 'PDX', 'UTM', 'JTI')
+       grex_region          Target tissue or region name (e.g., 'Brain_Cortex')
+       twas_genotypes_dir   Directory containing chromosome-level genotype files
+       output_grex_file     Output HDF5 path for storing predicted expression
+
+   Outputs:
+       GREX object with:
+           • .slice_bgen()    Converts BGENs or PLINK2 sets to model-specific inputs
+           • .apply_weights() Generates predicted GREX matrices (genes × samples)
+           • Output file: <output_grex_file>.hdf5 containing:
+               - 'genes'      : gene identifiers
+               - 'pred_expr'  : predicted expression matrix
+
+   See also:
+       TWAS, SummaryTWAS, GenotypeTWAS, Project
+```

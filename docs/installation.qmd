@@ -1,0 +1,63 @@
+# Getting started
+
+## 1) Requirements
+- **Compilers:** GCC/10.2.0
+- **OpenMPI:** ≥ 4.0.5
+- **Python:** ≥ 3.8.6
+- **R:** ≥ 4.0 
+
+## 2) Get the sources
+Clone the repo
+```
+git clone --recurse-submodules https://github.com/nhunghoang/dev_agentp.git
+cd dev_agentp
+```
+
+## 3) Bundle TWAS module
+Download models.tar.gz (see link in the README) and extract at the repo root:
+```
+cd dev_agentp
+tar -xvzf models.tar.gz
+```
+
+## 4) Dependencies
+Create and activate a virtual environment, then install Python deps listed in requirements.txt:
+```
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## 5) External Tools
+### PLink 2
+Download an appropriate PLINK 2 alpha build and place the binary at:
+```
+dev_agentp/software/plink2/plink2
+```
+(See PLINK’s download page linked from the README.) 
+
+### bgenix
+Build bgenix with waf:
+```
+cd dev_agentp/software
+wget http://code.enkre.net/bgen/tarball/release/bgen.tgz
+tar -xvzf bgen.tgz 
+mv bgen.tgz bgen
+cd bgen
+./waf configure
+./waf
+```
+
+### Regenie
+Compile Regenie:
+```
+cd dev_agentp/software/regenie
+make
+```
+
+## 6) Usage
+Lastly, launch R from inside the main repo (dev_agentp) and run the following commands:
+```
+install.packages(c('optparse','RColorBrewer'))
+install.packages('software/plink2R/plink2R/',repos=NULL)
+```

@@ -1,0 +1,45 @@
+---
+title: "agent_p"
+author: "Rubinov Lab"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    code-copy: true
+    smooth-scroll: true
+    number-sections: false
+---
+
+# Overview
+
+This quick-start guide shows how to build and run the AGENT-P Docker image and execute the bundled example.
+
+# Build the Image
+```
+cd dev_agentp
+docker build -t agentp-img .
+```
+
+A successful build ends with:
+=> naming to docker.io/library/agentp-img:latest
+
+# Run the Container
+```
+docker run -it agentp-img /bin/bash
+```
+
+# Verify Brace Expansion
+```
+sh -c 'echo {2..4}'
+```
+expected output: 2 3 4
+
+# Run the Example Code
+```
+cd /usr/home/example
+bash -lc 'python run_example.py'
+```
+
+### A successfull running will create example_project, preprocesses genotypes per chromosome with QC, predicts GREX and runs sTWAS/iTWAS, performs GWAS for hippocampus_volume, and saves all results under the project directory.
+

@@ -1,0 +1,24 @@
+```
+TWAS  Base class for transcriptome-wide association studies
+      Holds shared config (approach, region, model weights) and project paths.
+
+   obj = TWAS(project, twas_approach, grex_region)
+
+   Syntax:
+       # used via subclasses; no public run method here
+
+   Description:
+       Initializes common TWAS metadata:
+         • approach (e.g., 'FUS', 'PDX', 'UTM', 'JTI')
+         • grex_region (tissue / region label)
+         • weight_file resolved from Models.WEIGHT(approach, region)
+
+   Inputs:
+       project            Project object providing paths and I/O helpers
+       twas_approach      String: 'FUS' | 'PDX' | 'UTM' | 'JTI'
+       grex_region        String: tissue/region name
+
+   Outputs:
+       TWAS object with:
+         • .project, .approach, .grex_region, .weight_file
+```

@@ -1,0 +1,70 @@
+```
+Genotypes  Base class for genotype I/O and QC helpers
+
+   obj = Genotypes()
+
+   Syntax:
+       # acts as a lightweight base; see BGEN subclass for functionality
+
+   Description:
+       Holds common attributes for genotype handlers (e.g., file_type).
+       Subclasses implement concrete loaders and QC pipelines.
+
+   Inputs:
+       (none)
+
+   Outputs:
+       Genotypes object with:
+         • .file_type  String label for subclass ("bgen", "vcf", …)
+```
+
+```
+BGEN  Quality control (QC) pipeline for chromosome-split BGEN cohorts
+      Converts cohort BGEN → filtered BGEN (per chr) with PLINK2 + bgenix.
+
+   obj = BGEN(input_dir, input_pattern, subjects_file, genotype_dir)
+
+   Syntax:
+       obj.apply_qc(geno_hardcall=0.1, snp_missing=0.05, maf=0.01, hwe=1e-5)
+
+   Description:
+       Prepares per-chromosome genotype files for downstream GWAS/TWAS by:
+         • (optionally) subsetting to a subject cohort and making temporary PGENs
+           (via private __get_cohort; currently commented out).
+         • Applying PLINK2 hard-call thresholding (step _0 → _1).
+         • Filtering SNPs by missingness and minor allele frequency (step _1 → _2).
+         • Removing duplicate SNP IDs and filtering by Hardy–Weinberg equilibrium,
+           then exporting final BGEN v1.2 (8-bit) per chromosome.
+         • Indexing each final BGEN with bgenix and cleaning intermediates.
+
+   Inputs:
+       input_dir        Directory containing source BGEN/SAMPLE files
+                        named by pattern (e.g., c*.bgen / c*.sample).
+
+       input_pattern    Filename pattern with a single '*' for chromosome,
+                        e.g., "c*.bgen" (used by __get_cohort if enabled).
+
+       subjects_file    Path to FID/IID keep list used with PLINK2 --keep
+                        (used by __get_cohort if enabled).
+
+       genotype_dir     Working/output directory where temporary PGENs and
+                        final BGENs are written (expects a tmp/ subdir).
+
+       geno_hardcall    Float ∈ [0,1]. PLINK2 --hard-call-threshold (default 0.10).
+
+       snp_missing      Float ∈ [0,1]. PLINK2 --geno filter (max allowed missingness,
+                        default 0.05).
+
+       maf              Float ∈ (0,0.5]. PLINK2 --maf filter (default 0.01).
+
+       hwe              Float p-value threshold for PLINK2 --hwe (default 1e-5).
+
+   Outputs:
+       Files (per chromosome c=1..22) in genotype_dir:
+         • tmp/c{c}_0.pgen/pvar/psam     (if cohort slicing enabled)
+         • tmp/c{c}_1.pgen/pvar/psam     (post hard-call)
+         • tmp/c{c}_2.pgen/pvar/psam     (post missingness + MAF)
+         • c{c}.bgen, c{c}.bgen.bgi      (final filtered BGEN + index)
+       Return value:
+         • None. Progress is printed; intermediate tmp files are removed where noted.
+```

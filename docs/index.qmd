@@ -1,0 +1,34 @@
+# AGENT-P
+
+AGENT-P is a Python toolkit for GWAS/TWAS workflows.  
+It wraps common tools (**REGENIE**, **PLINK2**, **bgenix**) and provides simple classes for
+project setup (`Project`), GWAS (`GWAS`), and TWAS (`SummaryTWAS`, `GenotypeTWAS`).
+
+See the repo README for details and references.
+
+### Download
+
+[GitHub](https://github.com/nhunghoang/dev_agentp){.btn .btn-dark}
+
+### Interactive examples
+
+The examples illustrate the basic pipeline and can be run locally.
+
+- **Example script** — mirrors the README run  
+  [`example/run_example.py`](https://github.com/nhunghoang/dev_agentp/blob/main/example/run_example.py)
+
+### Installation
+You can run AGENT-P in two ways:
+
+1. **Manual setup:** Follow the steps in [installation.qmd](installation.qmd) to install dependencies and run the program manually.
+
+2. **Dockerfile setup:** Follow the steps in [documentation.qmd](documentation.qmd) to run the Dockerfile directly.
+
+3. **Automated setup:** Run the **quick_run.sh** to automatically download the required .sh files, install dependencies, and execute the example pipeline.
+
+
+### Contact
+
+Mika Rubinov: mika.rubinov at vanderbilt.edu
+
+Nhung Hoang: nhung.t.hoang at outlook.com

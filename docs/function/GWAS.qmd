@@ -1,0 +1,54 @@
+```
+GWAS  REGENIE wrapper for genome-wide association scans
+      Orchestrates step-1/step-2 runs per chromosome and consolidates outputs.
+
+   obj = GWAS(project)
+
+   Syntax:
+       obj.run(phens, overwrite=False, cleanup=True, num_threads=1)
+
+   Description:
+       The GWAS class wraps REGENIE to run GWAS for one or more phenotypes
+       using chromosome-specific BGEN inputs. It:
+         • Validates phenotype files from the provided Project and skips
+           phenotypes that already have results (unless overwrite=True).
+         • Builds a temporary multi-phenotype file and runs REGENIE
+           step 1 and step 2 for chromosomes 1..22 (parallelizable).
+         • Concatenates per-chromosome step-2 outputs into one result
+           file per phenotype and reformats to CSV with a computed PVAL.
+         • Optionally deletes temporary files on success.
+
+       Requirements (provided by the Project object):
+         • Genotypes directory with c{chrom}.bgen / c{chrom}.sample
+         • Covariates file path
+         • Phenotype file lookup via project.get_phenotype_file(name)
+         • Output directory via project.set_gwas_paths()
+
+   Inputs:
+       project              Project object supplying paths and I/O helpers.
+                            Used in the constructor.
+
+       phens                String or list[str]. Phenotype name(s) as known to
+                            the Project (each must resolve to a tab-separated
+                            file indexed by FID, IID).
+
+       overwrite            Logical scalar (default False). Recompute GWAS
+                            even if a result file already exists.
+
+       cleanup              Logical scalar (default True). Remove temporary
+                            REGENIE outputs and intermediate phenotype file.
+
+       num_threads          Positive integer (default 1). Number of worker
+                            processes used to parallelize per-chromosome runs.
+
+   Outputs:
+       Files (written under the Project’s GWAS output directory):
+         • <phen>.regenie            Final CSV per phenotype (step-2 results),
+                                      with PVAL computed from LOG10P and
+                                      standard REGENIE columns (ID→SNP, etc.).
+         • tmp/*                     Intermediate step-1/step-2 files per chr
+                                      (removed if cleanup=True).
+
+       Return value:
+         • None. Progress and warnings are printed to stdout.
+```
