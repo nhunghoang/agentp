@@ -1,1 +1,2 @@
+*.txt.gz filter=lfs diff=lfs merge=lfs -text
 agentp/models/UTMOST_dzhou/covariance/*.txt.gz filter=lfs diff=lfs merge=lfs -text
