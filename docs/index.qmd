@@ -8,14 +8,14 @@ See the repo README for details and references.
 
 ### Download
 
-[GitHub](https://github.com/nhunghoang/dev_agentp){.btn .btn-dark}
+[GitHub](https://github.com/nhunghoang/agentp){.btn .btn-dark}
 
 ### Interactive examples
 
 The examples illustrate the basic pipeline and can be run locally.
 
 - **Example script** — mirrors the README run  
-  [`example/run_example.py`](https://github.com/nhunghoang/dev_agentp/blob/main/example/run_example.py)
+  [`example/run_example.py`](https://github.com/nhunghoang/agentp/blob/main/example/run_example.py)
 
 ### Installation
 You can run AGENT-P in two ways:
