@@ -28,6 +28,6 @@ website:
           - file: function/TWAS.qmd
           - file: function/Genotypes.qmd
 
-repo-url: https://github.com/nhunghoang/dev_agentp
+repo-url: https://github.com/nhunghoang/agentp
 repo-actions: [issue, source]
 
