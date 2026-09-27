@@ -19,7 +19,7 @@ class BGEN(Genotypes):
     def __init__(self, input_dir, input_pattern, subjects_file, genotype_dir): 
         self.file_type = 'bgen'
         self.genotype_dir = genotype_dir
-        #self.__get_cohort(input_dir, input_pattern, subjects_file)
+        self.__get_cohort(input_dir, input_pattern, subjects_file)
 
     '''
     NOTE that the sliced genotypes are not necessarily in the project subject order
@@ -39,13 +39,7 @@ class BGEN(Genotypes):
                     '--make-pgen', \
                     '--out', f'{self.genotype_dir}/tmp/c{chrom}_0']
             try:
-                os.system(' '.join(cmd0))
-                #res0 = subprocess.run(cmd0, capture_output=True, text=True, check=True)
-                #out0 = res0.stdout.splitlines()
-                #for i in range(3,10): 
-                #    print(f'{TAB}{out1[i]}')
-                #print(f'\n{TAB}{out1[15]}')
-                #print(f'{TAB}{out1[40]}\n')
+                subprocess.run(cmd0, capture_output=True, text=True, check=True)
 
             except subprocess.CalledProcessError as e:
                 print(f'{e.stderr}')

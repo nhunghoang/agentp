@@ -207,8 +207,10 @@ class SummaryTWAS(TWAS):
             sp_params = {'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE, \
                          'text': True, 'bufsize': 1, 'universal_newlines': True}
             res = subprocess.Popen(cmd, **sp_params)
+            last_line = ''
             for line in res.stderr:
-                if line[:4] != 'INFO': 
+                last_line = line
+                if line[:4] != 'INFO':
                     errs = res.stderr.read()
                     if len(errs) == 0: err = line.split('-')[1].strip()
                     else: err = errs.splitlines()[-1].strip()
@@ -220,6 +222,11 @@ class SummaryTWAS(TWAS):
                 print(f'{TAB}{info}')
 
             res.wait()
+            ## MetaXcan logs unexpected errors at INFO level, so check the exit code
+            if res.returncode != 0:
+                err = last_line.split(' - ', 1)[-1].strip()
+                msg = f'{TAB}sTWAS ERROR: {err}\n'
+                sys.exit(msg)
 
     '''
     Track path and params of every input gwas.

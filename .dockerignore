@@ -1,0 +1,16 @@
+.git
+.DS_Store
+**/__pycache__
+**/*.py[co]
+*.egg-info
+
+# Compiled macOS objects in plink2R would break the Linux build
+agentp/external/plink2R/plink2R/src/*.o
+agentp/external/plink2R/plink2R/src/*.so
+
+# Large local data not needed in the image
+LDREF
+GTExv8.*
+*.pdf
+docs
+example/example_project

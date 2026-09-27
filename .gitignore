@@ -6,3 +6,7 @@ README_files/
 example/example_project/input_data/genotypes/
 example/run_example.py
 .Rhistory
+*.egg-info/
+*.o
+*.so
+example/example_project*/

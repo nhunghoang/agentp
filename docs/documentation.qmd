@@ -18,15 +18,17 @@ This quick-start guide shows how to build and run the AGENT-P Docker image and e
 # Build the Image
 ```
 cd dev_agentp
-docker build -t agentp-img .
+docker build --platform linux/amd64 -t agentp-img .
 ```
+
+The `--platform` flag is required on Apple Silicon Macs (plink2 and regenie are x86_64-only). Build from a checkout with Git LFS files pulled (`git lfs pull`), since the models and example data are copied from the repo.
 
 A successful build ends with:
 => naming to docker.io/library/agentp-img:latest
 
 # Run the Container
 ```
-docker run -it agentp-img /bin/bash
+docker run --platform linux/amd64 -it agentp-img
 ```
 
 # Verify Brace Expansion
@@ -38,7 +40,7 @@ expected output: 2 3 4
 # Run the Example Code
 ```
 cd /usr/home/example
-bash -lc 'python run_example.py'
+python run_example.py
 ```
 
 ### A successfull running will create example_project, preprocesses genotypes per chromosome with QC, predicts GREX and runs sTWAS/iTWAS, performs GWAS for hippocampus_volume, and saves all results under the project directory.

@@ -60,9 +60,10 @@ class GWAS:
             print(msg) 
 
         ## combine valid phenotypes into one temp file 
-        if len(phens) == 0: 
-            msg = f'{MSG}GWAS ERROR: There are no remaining phenotypes to compute GWAS for.\n' 
-            sys.exit(msg)
+        if len(phens) == 0:
+            msg = f'{MSG}GWAS: There are no remaining phenotypes to compute GWAS for.\n'
+            print(msg)
+            return [], None
         else:
             phen_data = [] 
             for phen, pfile in phens.items():
@@ -172,7 +173,10 @@ class GWAS:
             phens = [phens]
 
         phen_list, phen_file = self.__gather_phenotypes(phens, overwrite)
-        args = [(phen_list, phen_file, chrom) for chrom in range(1,23)]
+        if len(phen_list) == 0:
+            return
+
+        args =[(phen_list, phen_file, chrom) for chrom in range(1,23)]
 
         print(f'{MSG}Running GWAS...')
         pool = Pool(processes=num_threads)
