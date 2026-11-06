@@ -26,10 +26,11 @@ class Project:
             print(msg)
         else:
             os.mkdir(project_dir)
-            os.mkdir(f'{project_dir}/input_data')
             self.path = os.path.abspath(project_dir)
             msg = f'{MSG}Created new project directory:\n{TAB}{self.path}\n'
             print(msg)
+        ## also for an existing folder (e.g. an empty folder made by the user, or a mounted folder)
+        os.makedirs(f'{self.path}/input_data', exist_ok=True)
 
         self.input_paths = {'subj_file': f'{self.path}/input_data/subject_IDs.csv', \
                             'covs_file': f'{self.path}/input_data/covariates.csv', \

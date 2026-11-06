@@ -406,6 +406,11 @@ class IndividualTWAS(TWAS):
             print(msg)
             return
 
+        ## Predict.py refuses to overwrite an existing output or its summary log (and exits 0),
+        ## so remove both first
+        for f in [self.grex_file, self.grex_file.replace('.hdf5', '.log')]:
+            if os.path.exists(f): os.remove(f)
+
         ## init grex object 
         from .GREX import GREX
         grex = GREX(self.approach, self.grex_region, self.twas_genotypes_dir, self.grex_file)

@@ -30,13 +30,12 @@ class GREX:
     '''
     Note: Making this a pseudo-private method (Pool can't call private functions)
     '''
-    def _compute_dosage_subset(self, version, chrom, snps, gens, output_file): 
+    def _compute_dosage_subset(self, version, chrom, snps, doses, output_file): 
         dos_lines = []
-        for snp, gen in zip(snps.itertuples(), gens):
+        for snp, dose in zip(snps.itertuples(), doses):
             rsid = snp.rsid
             post = str(snp.pos)
             [ref, alt] = snp.allele_ids.split(',')
-            dose = np.argmax(gen, axis=1) ## (samples,)
 
             maf = '9' ## not used
             rsid_info = '\t'.join([str(chrom), rsid, post, ref, alt, maf])
@@ -86,7 +85,10 @@ class GREX:
                 num_snp = snp_set.shape[0]
                 end = start + num_snp
 
-                gen_set = [g.compute()['probs'] for g in gens[start:end]]
+                ## dosage per subject (most likely genotype), computed here so that the workers
+                ## get 1 int8 per subject instead of 3 float64 genotype probabilities
+                ## (with 10 workers, the probabilities added up to ~7 GB on the 2,000-subject example)
+                gen_set = np.array([np.argmax(g.compute()['probs'], axis=1) for g in gens[start:end]], dtype=np.int8)
                 start = end
                 print(f'{TAB}processing chr {chrom} block {i}...')
 
@@ -109,8 +111,9 @@ class GREX:
             ## concat versions
             t0 = time()
             vpath = f'{self.twas_genotypes_dir}/tmp_c{chrom}_v*.dosage.txt'
-            os.system(f'cat {vpath} >> {opath}')
-            os.system(f'gzip {opath}')
+            ## overwrite (not append to) files left by an earlier, interrupted run
+            os.system(f'cat {vpath} > {opath}')
+            os.system(f'gzip -f {opath}')
 
             tpass = time() - t0
             hr = int(tpass // 3600)

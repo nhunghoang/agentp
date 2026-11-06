@@ -6,6 +6,8 @@ import pandas as pd
 import sys
 import os 
 import subprocess
+import shutil
+import glob
 from .Static import Pool   ## fork-based pool, see Static.Pool
 
 from .Static import MSG, TAB
@@ -138,19 +140,25 @@ class GWAS:
     '''
     For one phen, combine all its REGENIE chrom files. 
     '''
-    def __concat_chrom_results(self, phen): 
+    def __concat_chrom_results(self, phen):
         phen_out = f'{self.output_dir}/{phen}.regenie'
 
-        ## copy first chrom with its headers 
-        cmd = ['cp', f'{self.output_dir}/tmp/c1_step2_{phen}.regenie', phen_out]
-        exit_code1 = os.system(' '.join(cmd))
+        ## done in Python, not with shell brace expansion ({2..22}), which /bin/sh
+        ## does not support on Ubuntu/Debian (dash): there, only chromosome 1 was kept
+        chrom_files = [f'{self.output_dir}/tmp/c{c}_step2_{phen}.regenie' for c in range(1, 23)]
+        missing = [f for f in chrom_files if not os.path.exists(f)]
+        if len(missing) > 0:
+            print(f'{TAB}GWAS ERROR: REGENIE results missing for "{phen}": {", ".join(missing)}')
+            return 1
 
-        ## copy the rest without headers 
-        chrom_in = f'{self.output_dir}/tmp/c' + '{2..22}' + f'_step2_{phen}.regenie' 
-        cmd = ['tail', '-n', '+2', '-q', chrom_in, '>>', phen_out]
-        exit_code2 = os.system(' '.join(cmd))
-
-        return exit_code1 + exit_code2
+        ## first chromosome with its header, the rest without
+        with open(phen_out, 'w') as out:
+            for k, cfile in enumerate(chrom_files):
+                with open(cfile) as inp:
+                    header = inp.readline()
+                    if k == 0: out.write(header)
+                    shutil.copyfileobj(inp, out)
+        return 0
 
     '''
     For one phen, reformat its REGENIE file. 
@@ -183,21 +191,23 @@ class GWAS:
         pool.starmap(self._call_regenie, args)
         print('')
 
+        failed = []
         for phen in phen_list:
             exit_code = self.__concat_chrom_results(phen)
             if exit_code == 0:
                 self.__reformat_gwas_output(phen)
-            print(f'{TAB}Saved GWAS results for "{phen}"')
+                print(f'{TAB}Saved GWAS results for "{phen}"')
+            else:
+                failed.append(phen)
 
-        if cleanup: 
-            chroms = f'{self.output_dir}/tmp/c' + '{1..22}' + f'_step2_*.regenie' 
-            os.system('rm ' + chroms)
+        if cleanup:
+            for c in range(1, 23):
+                for pattern in [f'c{c}_step2_*.regenie', f'c{c}_step1_*.loco', f'c{c}_step1_pred.list']:
+                    for f in glob.glob(f'{self.output_dir}/tmp/{pattern}'):
+                        os.remove(f)
+            if os.path.exists(phen_file): os.remove(phen_file)
 
-            locos = f'{self.output_dir}/tmp/c' + '{1..22}' + f'_step1_*.loco'
-            os.system('rm ' + locos)
-
-            preds = f'{self.output_dir}/tmp/c' + '{1..22}' + f'_step1_pred.list'
-            os.system('rm ' + preds)
-
-            os.system(f'rm {phen_file}')
+        if len(failed) > 0:
+            msg = f'{MSG}GWAS ERROR: no results were saved for: {", ".join(failed)} (see the errors above)'
+            sys.exit(msg)
             
