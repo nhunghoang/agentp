@@ -63,6 +63,9 @@ class TWAS:
 
 '''
 For parsing GWAS files, as needed for SummaryTWAS. 
+alt_col is the effect allele (the allele that the GWAS beta/z-score refers to),
+ref_col is the other (non-effect) allele. The default is REGENIE format, where
+BETA refers to ALLELE1.
 '''
 def get_gwas_params(sep, snp_col, ref_col, alt_col, \
                     beta_col, beta_sign_col, beta_se_col, \
@@ -71,8 +74,8 @@ def get_gwas_params(sep, snp_col, ref_col, alt_col, \
     params = [] 
     if sep: params.extend(['--separator', sep])
     if snp_col: params.extend(['--snp_column', snp_col])
-    if ref_col: params.extend(['--effect_allele_column', ref_col])
-    if alt_col: params.extend(['--non_effect_allele_column', alt_col])
+    if alt_col: params.extend(['--effect_allele_column', alt_col])
+    if ref_col: params.extend(['--non_effect_allele_column', ref_col])
     if beta_col: params.extend(['--beta_column', beta_col])
     if beta_sign_col: params.extend(['--beta_sign_column', beta_sign_col])
     if beta_se_col: params.extend(['--se_column', beta_se_col])
@@ -84,8 +87,8 @@ def get_gwas_params(sep, snp_col, ref_col, alt_col, \
     if len(params) == 0: 
         params = ['--separator', ',', \
                   '--snp_column', 'SNP', \
-                  '--effect_allele_column', 'ALLELE0', \
-                  '--non_effect_allele_column', 'ALLELE1', \
+                  '--effect_allele_column', 'ALLELE1', \
+                  '--non_effect_allele_column', 'ALLELE0', \
                   '--beta_column', 'BETA', \
                   '--se_column', 'SE', \
                   '--pvalue_column', 'PVAL']
