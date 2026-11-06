@@ -254,6 +254,8 @@ class SummaryTWAS(TWAS):
             print(msg)
             return
 
+        ## the MetaXcan scripts refuse to overwrite an existing output (and exit 0), so remove it first
+        if os.path.exists(output_file): os.remove(output_file)
         print(f'{MSG}Running sTWAS on "{phen}" using {self.approach} {self.grex_region} models...')
         if self.approach == 'FUS':
             res = self.__run_fusion(phen)
@@ -364,6 +366,8 @@ class IndividualTWAS(TWAS):
             print(msg) 
             return
 
+        ## the MetaXcan scripts refuse to overwrite an existing output (and exit 0), so remove it first
+        if os.path.exists(output_twas_file): os.remove(output_twas_file)
         msg = f'{MSG}Running iTWAS on "{phen}" using {self.approach} {self.grex_region} models...'
         print(msg)
 

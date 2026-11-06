@@ -84,7 +84,8 @@ def _structure(folder, pattern=None):
         path = os.path.join(folder, file)
         file = h5py.File(path, 'r')
 
-        genes = [g for g in file['genes']]
+        ## h5py >= 3 returns gene names as bytes: decode them so outputs have plain IDs (not b'ENSG...')
+        genes = [g.decode() if isinstance(g, bytes) else g for g in file['genes']]
         for i,gene in enumerate(genes):
             if not gene in gene_map:
                 gene_map[gene] = {}
@@ -158,7 +159,8 @@ def _code_999_b(k):
 def _structure_file(file_path):
     #logging.info("Acquiring HDF5 expression cache")
     file = h5py.File(file_path, 'r')
-    genes = [g for g in file['genes']]
+    ## h5py >= 3 returns gene names as bytes: decode them so outputs have plain IDs (not b'ENSG...')
+    genes = [g.decode() if isinstance(g, bytes) else g for g in file['genes']]
     h5 = file['pred_expr']
     return genes, h5
 
