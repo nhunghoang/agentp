@@ -2,11 +2,12 @@
 TWAS class
 '''
 
-import pandas as pd 
-import os 
+import pandas as pd
+import os
 import sys
+import json
 import subprocess
-from multiprocessing import Pool
+from .Static import Pool   ## fork-based pool, see Static.Pool
 
 from .Static import TAB, MSG
 from .Static import Paths, Scripts, Models
@@ -14,12 +15,49 @@ from .Static import Paths, Scripts, Models
 ## Note: imported in IndividualTWAS class if needed:
 #from GREX import GREX
 
+'''
+Raised when a TWAS run fails. Used instead of sys.exit() in code that runs
+inside Pool workers: sys.exit() kills the worker without returning a result,
+which makes Pool.starmap wait forever.
+'''
+class TWASError(Exception):
+    pass
+
 class TWAS:
-    def __init__(self, project, twas_approach, grex_region): 
-        self.project = project 
+    def __init__(self, project, twas_approach, grex_region):
+        self.project = project
         self.approach = twas_approach
         self.grex_region = grex_region
-        self.weight_file = Models.WEIGHT(twas_approach, grex_region) 
+        Models.check(twas_approach, grex_region)
+        self.weight_file = Models.WEIGHT(twas_approach, grex_region)
+
+    '''
+    Run TWAS on one phenotype, returning an error message instead of raising,
+    so that one failed phenotype does not stop the others in the Pool.
+    Note: Making this a pseudo-private method (Pool can't call private functions)
+    '''
+    def _try_phenotype_twas(self, phen, overwrite):
+        try:
+            self._run_phenotype_twas(phen, overwrite)
+            return None
+        except Exception as e:
+            return f'{type(e).__name__}: {e}'
+
+    '''
+    Multi-process run on a list of phenotypes; failures are reported after all finish.
+    '''
+    def _run_pool(self, phens, overwrite, num_threads):
+        params = [(phen, overwrite) for phen in phens]
+        with Pool(processes=num_threads) as pool:
+            errs = pool.starmap(self._try_phenotype_twas, params)
+
+        failed = [(phen, err) for phen, err in zip(phens, errs) if err is not None]
+        if len(failed) > 0:
+            msg = f'{MSG}TWAS ERROR: {len(failed)} of {len(phens)} phenotypes failed ' \
+                  f'using {self.approach} {self.grex_region} models'
+            for phen, err in failed:
+                msg += f'\n{TAB}{phen}: {err}'
+            raise TWASError(msg)
 
 ########################################################################################
 
@@ -83,12 +121,33 @@ class SummaryTWAS(TWAS):
     Save input GWAS in LD-Score format (currently just for FUSION). 
     TODO: add option for signed-sumstats that aren't BETA
     '''
-    def __save_gwas_ldscore(self, phen, gwas_file, gwas_params): 
-        output_gwas = f'{self.ldsc_dir}/{phen}' ## .sumstats.gz 
+    def __save_gwas_ldscore(self, phen, gwas_file, gwas_params):
+        output_gwas = f'{self.ldsc_dir}/{phen}' ## .sumstats.gz
+
+        ## the GWAS file and parameters used to make the LD-Score file, saved next to it,
+        ## so that a cached file is only reused for the same input
+        source = {'gwas_file': os.path.abspath(gwas_file), \
+                  'size': os.path.getsize(gwas_file), \
+                  'mtime': int(os.path.getmtime(gwas_file)), \
+                  'params': list(gwas_params)}
+        source_file = f'{output_gwas}.source.json'
+
         if os.path.exists(f'{output_gwas}.sumstats.gz'):
-            msg = f'{MSG}Loaded existing LD-Score GWAS file for phenotype "{phen}"'
+            if not os.path.exists(source_file):
+                msg = f'{MSG}WARNING: Loaded existing LD-Score GWAS file for phenotype "{phen}", ' \
+                      f'but the GWAS file and parameters it was made from were not recorded' \
+                      f'\n{TAB}Delete {output_gwas}.sumstats.gz to rebuild it from "{gwas_file}"'
+                print(msg)
+                return f'{output_gwas}.sumstats.gz'
+            with open(source_file) as f:
+                cached = json.load(f)
+            if cached == source:
+                msg = f'{MSG}Loaded existing LD-Score GWAS file for phenotype "{phen}"'
+                print(msg)
+                return f'{output_gwas}.sumstats.gz'
+            msg = f'{MSG}The existing LD-Score GWAS file for phenotype "{phen}" was made from a ' \
+                  f'different GWAS file or parameters ({cached["gwas_file"]}); rebuilding it'
             print(msg)
-            return f'{output_gwas}.sumstats.gz'
 
         print(f'{MSG}Saving "{phen}" GWAS file in LD-Score format...')
         params = {gwas_params[i][2:]: gwas_params[i+1] for \
@@ -123,6 +182,8 @@ class SummaryTWAS(TWAS):
             msg = f'{TAB}{err}\n'
             sys.exit(msg)
 
+        with open(source_file, 'w') as f:
+            json.dump(source, f, indent=2)
         print(f'{TAB}Done.')
         return f'{output_gwas}.sumstats.gz'
 
@@ -149,8 +210,8 @@ class SummaryTWAS(TWAS):
                 msg = f'{TAB}({phen}, {self.approach} {self.grex_region} models): chrom {chrom} done'
                 print(msg)
             except subprocess.CalledProcessError as e:
-                print(f'{e.stderr}')
-                sys.exit()
+                msg = f'FUSION failed on chrom {chrom} ({phen}, {self.approach} {self.grex_region} models)\n{e.stderr}'
+                raise TWASError(msg)
 
         ## concat and reformat  
         cnames = {'ID': 'gene', 'TWAS.Z': 'zscore', 'TWAS.P': 'pvalue', 'MODEL': 'best_model'}
@@ -207,26 +268,28 @@ class SummaryTWAS(TWAS):
             sp_params = {'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE, \
                          'text': True, 'bufsize': 1, 'universal_newlines': True}
             res = subprocess.Popen(cmd, **sp_params)
-            last_line = ''
+            last = ''
             for line in res.stderr:
-                last_line = line
+                last = line
                 if line[:4] != 'INFO':
                     errs = res.stderr.read()
                     if len(errs) == 0: err = line.split('-')[1].strip()
                     else: err = errs.splitlines()[-1].strip()
-                    msg = f'{TAB}{err}\n'
-                    sys.exit(msg)
+                    res.kill()
+                    msg = f'({phen}, {self.approach} {self.grex_region} models): {err}'
+                    raise TWASError(msg)
 
-                if '%' not in line: continue 
+                if '%' not in line: continue
                 info = line.split('-')[1].strip()
                 print(f'{TAB}{info}')
 
+            ## SPrediXcan also reports errors as INFO lines (e.g. "INFO - Unexpected error: ...")
             res.wait()
-            ## MetaXcan logs unexpected errors at INFO level, so check the exit code
-            if res.returncode != 0:
-                err = last_line.split(' - ', 1)[-1].strip()
-                msg = f'{TAB}sTWAS ERROR: {err}\n'
-                sys.exit(msg)
+            if (res.returncode != 0) or (not os.path.exists(output_file)):
+                err = last.split(' - ', 1)[-1].strip()
+                msg = f'({phen}, {self.approach} {self.grex_region} models): ' \
+                      f'SPrediXcan exited with code {res.returncode}: {err}'
+                raise TWASError(msg)
 
     '''
     Track path and params of every input gwas.
@@ -254,13 +317,11 @@ class SummaryTWAS(TWAS):
     '''
     Multi-process run on list of phenotypes. 
     '''
-    def run_twas(self, phens, overwrite=False, num_threads=1): 
-        if not type(phens) == list: 
+    def run_twas(self, phens, overwrite=False, num_threads=1):
+        if not type(phens) == list:
             self._run_phenotype_twas(phens, overwrite)
         else:
-            params = [(phen, overwrite) for phen in phens]
-            pool = Pool(processes=num_threads)
-            pool.starmap(self._run_phenotype_twas, params)
+            self._run_pool(phens, overwrite, num_threads)
         print('')
 
 ########################################################################################
@@ -319,8 +380,14 @@ class IndividualTWAS(TWAS):
         try:
             res = subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError as e:
-            print(f'{e.stderr}')
-            sys.exit()
+            msg = f'({phen}, {self.approach} {self.grex_region} models): ' \
+                  f'PrediXcanAssociation exited with code {e.returncode} (see its output above)'
+            raise TWASError(msg)
+        ## PrediXcanAssociation can also log an error and exit 0, so check for the output file
+        if not os.path.exists(output_twas_file):
+            msg = f'({phen}, {self.approach} {self.grex_region} models): ' \
+                  f'PrediXcanAssociation did not create {output_twas_file} (see its output above)'
+            raise TWASError(msg)
 
     '''
     Predict GREX (FUS: gene scores into grex | JTI/PDX/UTM: dosages into grex)
@@ -363,13 +430,89 @@ class IndividualTWAS(TWAS):
                 msg = f'{MSG}iTWAS ERROR: Add subject-level covariates to project first'
                 sys.exit(msg) 
 
-        if not type(phens) == list: 
+        if not type(phens) == list:
             self._run_phenotype_twas(phens, overwrite)
         else:
-            params = [(phen, overwrite) for phen in phens]
-            pool = Pool(processes=num_threads)
-            pool.starmap(self._run_phenotype_twas, params)
+            self._run_pool(phens, overwrite, num_threads)
         print('')
 
+########################################################################################
+
+'''
+Run TWAS for a list of phenotypes with every model set (all approaches and GREx
+regions, including models added with Project.add_model), then combine the results
+per phenotype with an ACAT meta-analysis (see Meta.collect_twas).
+
+project:     an instance of the Project class
+phens:       string or list of strings, phenotype names
+twas_type:   'stwas' (summary TWAS) or 'itwas' (individual TWAS)
+gwas_files:  for summary TWAS, dict of {phenotype: GWAS file}
+gwas_params: for summary TWAS, dict of add_gwas() parsing parameters used for every
+             GWAS file (e.g., {'sep': ',', 'snp_col': 'rsid', ...}); default is REGENIE format
+approaches / regions: lists of approach and region abbreviations to include (default: all)
+overwrite:   rerun TWAS that already exist
+num_threads: number of phenotypes run in parallel per model set
+combine:     run collect_twas() for each phenotype after all TWAS finish
+
+A model set that fails (e.g., missing model files) is reported and skipped, and the
+remaining model sets still run. Returns a dict of {phenotype: combined table} if combine.
+'''
+def run_all_twas(project, phens, twas_type='stwas', gwas_files=None, gwas_params=None, \
+                 approaches=None, regions=None, overwrite=False, num_threads=1, combine=True):
+    from .Meta import collect_twas
+
+    phens = [phens] if not type(phens) == list else phens
+    gwas_params = {} if gwas_params is None else gwas_params
+    if twas_type not in ['stwas', 'itwas']:
+        msg = f'{MSG}TWAS ERROR: twas_type must be "stwas" or "itwas"'
+        sys.exit(msg)
+
+    ## check inputs before starting any TWAS
+    if twas_type == 'stwas':
+        missing = [p for p in phens if (gwas_files is None) or (p not in gwas_files)]
+        if len(missing) > 0:
+            msg = f'{MSG}sTWAS ERROR: No GWAS file given for phenotype(s): {", ".join(missing)}'
+            sys.exit(msg)
+        for p in phens:
+            if not os.path.exists(gwas_files[p]):
+                msg = f'{MSG}sTWAS ERROR: Input gwas file "{gwas_files[p]}" does not exist'
+                sys.exit(msg)
+
+    model_sets = [(app, reg) for (app, reg) in Models.model_sets() \
+                  if (approaches is None or app in approaches) and (regions is None or reg in regions)]
+    if len(model_sets) == 0:
+        msg = f'{MSG}TWAS ERROR: No model sets match the given approaches and regions'
+        sys.exit(msg)
+
+    print(f'{MSG}Running {"summary" if twas_type == "stwas" else "individual"} TWAS on ' \
+          f'{len(phens)} phenotype(s) with {len(model_sets)} model sets...')
+    failed = []
+    for k, (app, reg) in enumerate(model_sets):
+        print(f'{MSG}[{k+1}/{len(model_sets)}] {app} {reg} models')
+        try:
+            if twas_type == 'stwas':
+                twas = SummaryTWAS(project, app, reg)
+                for p in phens:
+                    twas.add_gwas(p, gwas_files[p], **gwas_params)
+            else:
+                twas = IndividualTWAS(project, app, reg)
+                twas.predict_grex()
+            twas.run_twas(phens, overwrite=overwrite, num_threads=num_threads)
+        except TWASError as e:
+            failed.append((app, reg, str(e).strip()))
+            print(f'{TAB}WARNING: {app} {reg} models failed (skipped); see the summary at the end')
+
+    if len(failed) > 0:
+        msg = f'{MSG}WARNING: {len(failed)} of {len(model_sets)} model sets failed; ' \
+              f'their results are missing from the combined tables:'
+        for app, reg, err in failed:
+            lines = [l.strip() for l in err.splitlines() if l.strip() and not l.startswith('> TWAS ERROR')]
+            msg += f'\n{TAB}{app} {reg}: ' + f'\n{TAB}{TAB}'.join(lines)
+        print(msg)
+
+    if not combine:
+        return None
+    return {p: collect_twas(project, p, twas_type, approaches=approaches, regions=regions) \
+            for p in phens}
 
 

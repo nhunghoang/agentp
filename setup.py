@@ -11,7 +11,7 @@ setup(
     url='https://github.com/nhunghoang/neurogen',
     description=DESCRIPTION, 
     license='MIT',
-    python_requires=">=3.8",
+    python_requires=">=3.9",   # importlib.resources.files (Static.py)
     classifiers=[
         'Programming Language :: Python :: 3', 
         ],
@@ -26,6 +26,7 @@ setup(
         'scipy',
         'statsmodels',
         'pyliftover', 
+        'matplotlib', 
         'setuptools',
         ], 
     package_data={
@@ -34,6 +35,7 @@ setup(
                    'agentp/external/ldsc/**/*',
                    'agentp/external/plink2R/**/*',
                    'agentp/models/*',
+                   'agentp/data/*',
                   ]
     }, 
     include_package_data=True,

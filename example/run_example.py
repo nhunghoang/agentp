@@ -1,51 +1,67 @@
-from agentp import Project, SummaryTWAS, IndividualTWAS, GWAS
+'''
+Example run of AGENT-P on the example data, using the small example models in
+example/example_models (caudate models; JTI is used here).
 
-## init project 
-main_project_folder = 'example_project'
-project = Project(main_project_folder)
+  - summary TWAS of amygdala volume, from a GWAS of the example cohort
+    (example_data/amygdala_volume_gwas.regenie.gz, made with REGENIE from the example genotypes)
+  - individual TWAS of amygdala volume, from the example genotypes, covariates, and phenotypes
+  - a Manhattan plot of the individual TWAS, and a Miami plot of the summary (top) vs
+    individual (bottom) TWAS
+
+Runs in a few minutes. Needs plink2 and bgenix on PATH.
+Output: example/example_run (TWAS results in sTWAS/ and iTWAS/, plots in figures/)
+
+The example models also include PrediXcan ('PDX'), UTMOST ('UTM'), and FUSION ('FUS'; needs
+Rscript) caudate models: change `approach` below to try them.
+
+usage: python run_example.py
+'''
+
+import os
+
+from agentp import Project, SummaryTWAS, IndividualTWAS, set_models_dir
+from agentp import load_pvalues, manhattan_plot, miami_plot
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+os.chdir(HERE)
+
+## use the small example models (caudate only) instead of the full models
+set_models_dir('example_models')
+
+approach = 'JTI'
+region = 'caudate'
+phen = 'amygdala_volume'
 
 ########################################################################
 
-## init a summary twas that uses JTI models trained on hippocampus genes
-stwas = SummaryTWAS(project, 'JTI', 'hippocampus') 
-
-## apply these models to a GWAS on amygdala volumes 
-stwas.add_gwas('amygdala_volume', 'example_data/vol_mean_amygdala.regenie') 
-
-## run the summary TWAS 
-stwas.run_twas('amygdala_volume') 
-
-## TWAS results are saved to
-## agentp_test/sTWAS/JTI_hippocampus/amygdala_volume.csv
-
-########################################################################
-
-## init a individual twas that uses FUSION models trained on caudate genes
-gtwas = IndividualTWAS(project, 'FUS', 'caudate')
-
-## add subject data to the project 
-project.set_subjects('example_data/subjects.txt') 
+## init project and add the subject-level data (genotypes go through QC)
+project = Project('example_run')
+project.set_subjects('example_data/subjects.txt')
 project.add_covariates('example_data/covariates.csv')
 project.add_phenotypes('example_data/volumes.csv')
 project.add_genotypes('example_data/genotypes', 'test_c*.bgen')
 
-## predict FUSION-caudate grex for this cohort 
-gtwas.predict_grex() 
+## summary TWAS: apply the JTI caudate models to the GWAS of amygdala volume in the example cohort
+stwas = SummaryTWAS(project, approach, region)
+stwas.add_gwas(phen, 'example_data/amygdala_volume_gwas.regenie.gz')
+stwas.run_twas(phen)
 
-## run the individual TWAS on putamen volumes
-gtwas.run_twas('putamen_volume')
+## individual TWAS: predict JTI caudate GREx for the cohort, then test amygdala volume
+itwas = IndividualTWAS(project, approach, region)
+itwas.predict_grex()
+itwas.run_twas(phen)
 
-## TWAS results are saved to
-## agentp_test/gTWAS/FUS_caudate/putamen_volume.csv
+## results are saved to example_run/sTWAS/JTI_caudate/amygdala_volume.csv
+##                   and example_run/iTWAS/JTI_caudate/amygdala_volume.csv
+s = load_pvalues(f'example_run/sTWAS/{approach}_{region}/{phen}.csv')
+i = load_pvalues(f'example_run/iTWAS/{approach}_{region}/{phen}.csv')
 
-########################################################################
+## plots
+os.makedirs('example_run/figures', exist_ok=True)
+label = f'{approach} {region}'
+manhattan_plot(i, label=f'Individual TWAS ({label})', title=phen, \
+               out_file='example_run/figures/manhattan.png')
+miami_plot(s, i, top_label=f'Summary TWAS ({label})', bottom_label=f'Individual TWAS ({label})', \
+           title=phen, out_file='example_run/figures/miami.png')
 
-## init a gwas 
-gwas = GWAS(project) 
-
-## no need to add the subject data again, since we already did for gTWAS
-## run GWAS on nucleus hippocampus volumes 
-gwas.run('hippocampus_volume')
-
-## GWAS results are saved to
-## agentp_test/GWAS/hippocampus_volume.regenie
+print('\n> Done. Plots are in example_run/figures')

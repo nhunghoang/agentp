@@ -6,7 +6,7 @@ import pandas as pd
 import sys
 import os 
 import subprocess
-from multiprocessing import Pool
+from .Static import Pool   ## fork-based pool, see Static.Pool
 
 from .Static import MSG, TAB
 from .Static import Scripts

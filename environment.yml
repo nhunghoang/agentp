@@ -1,0 +1,45 @@
+# Conda environment for AGENT-P: Python packages, the external tools (plink2, bgenix, REGENIE),
+# and R for FUSION. AGENT-P itself is then installed from this repository:
+#
+#   conda env create -f environment.yml
+#   conda activate agentp
+#   pip install --no-deps -e .                        # AGENT-P; --no-deps keeps the conda packages
+#   R CMD INSTALL agentp/external/plink2R/plink2R     # plink2R (FUSION) is not on conda
+#
+# Then download the models (README, Set Up step B).
+
+name: agentp
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults             # mixing Anaconda's defaults channel with conda-forge breaks pyarrow (via bgen-reader)
+dependencies:
+  - python=3.10
+  - numpy<2                # the bundled MetaXcan code is tested with numpy 1.x
+  - pandas
+  - scipy>=1.11            # exact Cauchy tail for ACAT
+  - statsmodels
+  - h5py
+  - patsy
+  - bitarray
+  - matplotlib
+  - bgen-reader
+  - pyliftover
+  - pip
+
+  ## external tools, called by name (must be on PATH, which conda activate takes care of)
+  - plink2=2.00a5.12
+  - bgenix=1.1.7
+  - regenie=3.6            # version used in the AGENT-P paper
+
+  ## R for FUSION (plink2R is installed from agentp/external, see above)
+  - r-base=4.2             # 4.3 needs zlib >= 1.3, but every bgenix 1.1.7 build needs zlib < 1.3
+  - r-optparse
+  - r-rcolorbrewer
+  - r-rcpp
+  - r-rcppeigen
+  - compilers              # to build plink2R
+
+## AGENT-P is installed with `pip install --no-deps -e .` (above), not in a pip section here:
+## pip would otherwise replace conda's numpy and bgen-reader dependencies (their PyPI and conda
+## version requirements differ), which breaks h5py

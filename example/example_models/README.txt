@@ -1,0 +1,1 @@
+Small example model set made by scripts/make_example_models.py: caudate models of PrediXcan, UTMOST, JTI (restricted to the SNPs in example_data/genotypes) and FUSION (300 genes). For example runs only; use the full models for real analyses.

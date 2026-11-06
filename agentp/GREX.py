@@ -6,13 +6,14 @@ for the different TWAS gene models.
 import pandas as pd
 import numpy as np 
 import h5py
-import bgen_reader as bgr
+## bgen_reader is imported in __bgen_to_dosage, so that summary TWAS does not need it
 
-from multiprocessing import Pool
+from .Static import Pool   ## fork-based pool, see Static.Pool
 from time import time
 import gzip
 import glob
 import os
+import sys
 import subprocess
 
 from .Static import TAB
@@ -49,7 +50,8 @@ class GREX:
 
     ''' 
     '''
-    def __bgen_to_dosage(self, input_pattern, cleanup, num_threads=10, subset_size=5000): 
+    def __bgen_to_dosage(self, input_pattern, cleanup, num_threads=10, subset_size=5000):
+        import bgen_reader as bgr
         print(f'\n{TAB}Converting genotypes to dosages:')
         pool = Pool(processes=num_threads)
         for chrom in range(1,23):
@@ -63,7 +65,7 @@ class GREX:
             gens = bgen['genotype']
 
             nvar = len(snps)
-            nblocks = nvar // subset_size
+            nblocks = max(1, nvar // subset_size)   ## at least one block (chromosomes with < subset_size variants)
             snps = snps.repartition(npartitions=nblocks)
             snp_blocks = snps.to_delayed()
 
@@ -116,10 +118,14 @@ class GREX:
             sc = int((tpass % 3600) % 60)
             print(f'{TAB}combined all blocks into one file ({hr} hr {mn} mn {sc} sc)')
             
-            ## delete temp dosage files 
+            ## delete temp dosage files
             if cleanup:
                 cmd = f'rm {self.twas_genotypes_dir}/tmp_c{chrom}_*.dosage.txt'
                 os.system(cmd)
+
+        ## stop the worker processes (otherwise they stay alive until the program exits)
+        pool.close()
+        pool.join()
 
     '''
     FUSION version of predict_grex() using scores:
@@ -157,21 +163,27 @@ class GREX:
                     '--prediction_summary_output', f'{self.out_path}.log'])
         res = os.system(' '.join(cmd))
 
+        ## Predict.py reports some errors only in its log, so also check for the output file
+        if (res != 0) or (not os.path.exists(f'{self.out_path}.hdf5')):
+            from .TWAS import TWASError
+            msg = f'GREx prediction failed ({self.twas_approach} {self.grex_region} models): ' \
+                  f'Predict.py did not create {self.out_path}.hdf5 (see its output above)'
+            raise TWASError(msg)
+
     '''
     Slice input bgen files to just the SNPs and 
     format needed for the TWAS models of interest. 
 
-    FUS: .bed files 
-    PDX/UTM/JTI: sliced .bgen to .dosage.txt.gz files
+    FUS: .bed files
+    PDX/UTM/JTI and added PredictDB models: sliced .bgen to .dosage.txt.gz files
     '''
-    def slice_bgen(self, input_dir, cleanup):  
-        model_snps = Models.SNPS(self.twas_approach) 
-        for c in range(1,23): 
+    def slice_bgen(self, input_dir, cleanup):
+        for c in range(1,23):
             #if os.path.exists(f'{self.twas_genotypes_dir}/tmp_c{c}.bgen'): continue
             cmd = [Scripts.PLINK2, \
                    '--bgen', f'{input_dir}/c{c}.bgen', 'ref-first', \
                    '--sample', f'{input_dir}/c{c}.sample', \
-                   '--extract', f'{model_snps}/c{c}.csv']
+                   '--extract', Models.SNP_FILE(self.twas_approach, self.grex_region, c)]
 
             if self.twas_approach == 'FUS': 
                 cmd.append('--make-bed')
@@ -186,8 +198,8 @@ class GREX:
                 print(f'{e.stderr}')
                 sys.exit()
 
-        ## for PDX/UTM/JTI files, generate dosage files 
-        if self.twas_approach in ['PDX', 'UTM', 'JTI']:
+        ## for PredictDB-format models (PDX/UTM/JTI and added models), generate dosage files
+        if self.twas_approach != 'FUS':
             self.__bgen_to_dosage('tmp_c*.bgen', cleanup)
             if cleanup:
                 os.system(f'rm {self.twas_genotypes_dir}/tmp_c*.bgen*') 
@@ -206,8 +218,8 @@ class GREX:
         
             ## apply plink2 score to each gene (parallelize by chrom)
             params = [(ch, cdf['gene'].values) for ch, cdf in fus_genes.groupby('CHR')]
-            pool = Pool(processes=8) ## TODO: make num_threads an option
-            pool.starmap(self._apply_fusion_weights, params)
+            with Pool(processes=8) as pool: ## TODO: make num_threads an option
+                pool.starmap(self._apply_fusion_weights, params)
 
             ## gather all .sscore files into one hdf5 file
             gene_files = glob.glob(f'{self.out_path}/tmp_*.sscore')
